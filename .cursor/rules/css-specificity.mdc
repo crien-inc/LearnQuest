@@ -1,0 +1,91 @@
+---
+description: CSSの詳細度を(0,1,0)に統一するための運用ルール（単一クラスセレクタ）
+globs: *.css,*.scss,*.sass,*.less,*.pcss
+alwaysApply: false
+---
+# CSS詳細度統一ルール（Single Class Selector Policy）
+
+## 目的
+予測可能なカスケードを保ち、`!important` の乱用や詳細度のインフレを防止するため、原則として詳細度を `(0,1,0)` に統一する。
+
+## 適用範囲
+- スタイルシート全般（CSS/SCSS/Sass/Less/PostCSS）。
+- リセットCSSやサードパーティCSSは、専用レイヤーに隔離しこのルールの例外とする（後述）。
+
+## 基本方針（必須）
+- 1 セレクタ = 単一クラスで記述する（詳細度 `(0,1,0)`）。
+- 上に書かれたルールより、下に書かれたルールが強くなる「ソース順」で上書きする。
+- 擬似クラス・擬似要素は必要最小限に限定し、ベースより後に記述する。
+
+### 許可（例）
+- 単一クラス: `.button`, `.card`, `.media__image`
+- 状態（擬似クラス/状態クラス）: `.link:hover`, `.input:focus`, `.is-active`
+- 擬似要素: `.tag::before`, `.button::after`
+
+### 禁止（例）
+- `#id` セレクタの使用
+- 要素型セレクタの直書き（`p`, `a`, `h3` など）
+- 子孫/子/隣接/兄弟コンビネータによる結合（例: `.card a`, `.item > span`, `.tab + .tab`）
+- 複合クラス（例: `.a.b`）やクラス＋要素（例: `a.button`）
+- 重要度の人為的上げ止め（`!important`）
+
+## 例外ポリシー（最小限）
+- リッチテキスト領域: スコープクラス配下に限り要素型セレクタを許容する。
+  - 例: `.prose h2`, `.prose p + p`
+- アクセシビリティ属性による状態は許可（過剰な組み合わせを避ける）。
+  - 例: `.tab[aria-selected="true"]`
+- サードパーティCSSは専用レイヤーに隔離し、アプリ側から上書きしない。
+
+## カスケードレイヤー（推奨）
+```css
+@layer reset, third-party, base, components, utilities, overrides;
+
+/* 例: それぞれを該当レイヤーに配置する */
+@import "reset.css" layer(reset);
+@import "vendor.css" layer(third-party);
+
+@layer base { /* トークン・初期化 */ }
+@layer components { /* 単一クラスのコンポーネント */ }
+@layer utilities { /* 単機能ユーティリティ */ }
+@layer overrides { /* やむを得ない上書きのみ（要理由） */ }
+```
+
+## 検出基準（正規表現例）
+> 実装言語/ビルド構成により誤検知の可能性があるため、あくまでヒューリスティックな例。
+
+- ID セレクタの検出:
+  - `(^|[^a-zA-Z0-9_-])#[a-zA-Z][a-zA-Z0-9_-]*\b`
+- 型セレクタ（要素）の検出（スコープ無し）:
+  - `(^|[,\n])\s*[a-z][a-z0-9-]*\s*(?=[\s\.#:\[{])`
+- 子孫/子/兄弟コンビネータの検出（クラス起点）:
+  - `\.[a-zA-Z0-9_-]+\s+[>+~]?\s+[a-zA-Z0-9\.#\[:]`
+- 複合クラス（`.a.b`）の検出:
+  - `\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+`
+- `!important` の検出:
+  - `!\s*important\b`
+
+## 改善ガイダンス（不足時の対応）
+- `.card a { ... }` → 対象要素へクラスを付与: `.card__link { ... }`
+- `p { ... }` → 役割クラスへ置換: `.text-body { ... }`
+- `#submit { ... }` → クラス化: `.button--primary { ... }`
+- `!important` 依存 → 定義位置の見直し/レイヤー整理で解消
+
+## NG/OK 例
+```css
+/* Bad */
+p { ... }
+.element h3 { ... }
+.card a:hover { ... }
+```
+
+```css
+/* Good */
+.element { ... }
+.element__block { ... }
+.link:hover { ... }
+```
+
+## 関連ルール
+- クラス命名規約は以下を参照（役割ベースで統一）:
+  - [html-class-naming.mdc](mdc:.cursor/rules/html-class-naming.mdc)
+

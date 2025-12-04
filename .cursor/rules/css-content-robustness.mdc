@@ -1,0 +1,100 @@
+---
+description: コンテンツ変動に強いスタイリング（テキスト/画像の崩れ防止）ガイド
+globs: *.css,*.scss,*.sass,*.less,*.html,*.tsx,*.jsx
+alwaysApply: false
+---
+
+# CSS: コンテンツが変わっても崩れないようにする
+
+CMS 等で文字数や画像の比率が変わってもレイアウトが破綻しないための最小原則と実装ガイド。まずはネイティブな仕組みと CSS の基本機能で堅牢性を確保します。
+
+## 原則
+- 固定高さ・固定幅を避け、伸縮可能なボックスを前提にする
+- 余白や外形は親レイアウトで決定し、再利用パーツに寸法/余白を持たせない（詳しくは [css-reusable-parts-no-spacing-size.mdc](mdc:.cursor/rules/css-reusable-parts-no-spacing-size.mdc)）
+- 単一クラスセレクタで詳細度 (0,1,0) を維持（詳しくは [css-specificity.mdc](mdc:.cursor/rules/css-specificity.mdc)）
+- HTML セマンティクスを優先し、読みやすさ/操作しやすさを担保（詳しくは [a11y-semantics-wcag.mdc](mdc:.cursor/rules/a11y-semantics-wcag.mdc)）
+
+## テキストが増減しても崩さない
+- 高さ固定を避け、複数行を許容（必要に応じて行間・最小高のみ）
+- 長い単語/URL への対処: `overflow-wrap: anywhere;` または `word-break: break-word;`
+- 自然な分割: 可能なら `hyphens: auto;`（対応ブラウザ）
+- Flex/Grid でのはみ出し回避:
+  - Flex 子要素に `min-width: 0`
+  - Grid の列幅に `minmax(0, 1fr)`
+- 省略表示（任意）を使う場合は重要情報を隠さない。ツールチップや詳細画面など代替手段を用意
+
+### 例（CSS）
+```css
+.textTruncate {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 表示行数 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.allowWrap {
+  overflow-wrap: anywhere; /* 長い連続文字にも対応 */
+}
+
+.flexItem {
+  min-width: 0; /* テキストのオーバーフロー抑止 */
+}
+```
+
+## 画像の比率/サイズがバラバラでも崩さない
+- ラッパーに比率を持たせ、画像は中でトリミングするのが基本
+- 画像側は枠いっぱいに広げ、`object-fit: cover` を用いて切り抜き位置は `object-position` で調整
+- 比率不明の画像は `max-width: 100%; height: auto;` ではみ出し防止
+- 重要: 画像自身に `width` と `height` を同時に固定しつつ `aspect-ratio` を与えない。比率はラッパー側に持たせる
+
+### 例（HTML/CSS）
+```html
+<div class="thumb">
+  <img class="thumbImage" src="..." alt="..." />
+  <!-- alt は内容に応じて適切に。装飾なら alt="" -->
+</div>
+```
+
+```css
+/* ラッパーは比率を保持 */
+.thumb {
+  aspect-ratio: 4 / 3;
+  overflow: hidden; /* はみ出し部分は隠す */
+}
+
+/* 画像は枠いっぱいに広げてトリミング */
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  display: block;
+}
+
+/* 比率不明のとき（枠で比率を決めない場合） */
+.imgFluid {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+```
+
+## 複合レイアウトのコツ
+- カード一覧: `grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));` と `gap` で崩れを抑制
+- カード内部: 本文ラッパーに `min-width: 0`、タイトル/本文に `overflow-wrap: anywhere`
+- メディア + テキスト横並び: コンテンツ列を `minmax(0, 1fr)` にし、長文でのはみ出しを回避
+
+## チェックリスト
+- [ ] 高さ固定を避け、増減に耐える
+- [ ] 長文/長単語で横スクロールが出ない
+- [ ] 画像は枠を維持しつつトリミング or 収縮できる
+- [ ] 単一クラスセレクタで詳細度を統一
+- [ ] 再利用パーツに `width`/`height`/`margin` を持たせていない
+- [ ] `alt` が適切、視覚だけに依存していない
+
+## 関連ルール
+- [css-reusable-parts-no-spacing-size.mdc](mdc:.cursor/rules/css-reusable-parts-no-spacing-size.mdc)
+- [css-specificity.mdc](mdc:.cursor/rules/css-specificity.mdc)
+- [html-class-naming.mdc](mdc:.cursor/rules/html-class-naming.mdc)
+- [a11y-semantics-wcag.mdc](mdc:.cursor/rules/a11y-semantics-wcag.mdc)
+

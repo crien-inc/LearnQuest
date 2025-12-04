@@ -1,0 +1,90 @@
+---
+description: HTML/CSS のクラス命名規則ガイド（統一・非依存・可読性）
+globs: *.html,*.htm,*.css,*.scss,*.sass
+---
+
+# HTML/CSS クラス命名規則
+
+このルールは、HTML と CSS におけるクラス名の付け方・考え方を統一し、保守性と変更耐性を高めるための指針です。
+
+## 命名規則の統一
+- CSS 設計（例: BEM / FLOCSS / ITCSS など）を採用する場合、プロジェクト全体で厳格に遵守すること。1 箇所の例外も許容しません。
+- 単語の区切り方はプロジェクト内で 1 方式に統一すること。
+  - kebab-case（推奨）: `.product-list`, `.site-header`
+
+## デザインに左右される名称にしない
+- レイアウトの左右・位置・見た目に依存した命名（例: `.left`, `.right`, `.two-column-left`）は避ける。
+- 具体的な役割・内容を表す命名にする（例: `.media__image`, `.media__text`, `.sidebar`）。
+
+NG 例:
+```html
+<div class="left">...</div>
+<div class="right">...</div>
+```
+
+OK 例:
+```html
+<div class="media">
+  <img class="media__image" src="..." alt="..." />
+  <p class="media__text">...</p>
+</div>
+```
+
+## 色に関する命名は抽象的にする
+- 実色名（`.red`, `.blue` など）は避け、役割ベースの抽象名を用いる。
+- 例: `.primary`, `.primary-color`, `.accent`, `.text-muted`
+
+推奨（カラートークンの併用）:
+```css
+:root {
+  --color-primary: #c00;
+  --color-accent: #0a7;
+}
+.button--primary { color: #fff; background-color: var(--color-primary); }
+```
+
+## 難しい単語は使わない
+- チーム内の理解を阻害する難解・専門的すぎる単語は避け、直感的で簡潔な語を選ぶ。
+- 例: `auxiliary` や `salient` よりも、`helper`, `highlight` など分かりやすい語を選択。
+
+## 時にはローマ字読みも許容する
+- 専門用語や固有名詞で英語にすると冗長・不明瞭になる場合は、ローマ字読みを許容。
+- 例: ドメイン固有要素に限り `.furigana`, `.yubinbango` などを検討（混在や略称の乱立は避ける）。
+
+## `<a>`, `<img>`, `<span>` が最後の子要素の場合の例外
+- 「すべての要素にクラスを付ける」方針を原則とするが、以下の条件を満たす場合はクラス無しを許容：
+  - 親要素の BEM/役割クラスで十分にスタイル適用が可能である。
+  - 対象要素が将来的に構造変更される可能性が低い。
+  - スクリプトやテストで直接フックしない（必要な場合は `data-*` 属性やクラスを付与）。
+
+OK 例:
+```html
+<a href="...">詳細を見る</a>
+<img src="..." alt="..." />
+<span>NEW</span>
+```
+
+注意:
+- E2E テストや計測でフックが必要な場合は、`.link--detail` や `data-testid="detail-link"` などを付与すること。
+
+## BEM を採用する場合の補足（参考）
+- ブロック: `.block`
+- エレメント: `.block__element`
+- モディファイア: `.block--modifier`, `.block__element--modifier`
+- 状態表現: `is-` 接頭辞（例: `.is-active`, `.is-disabled`）
+
+```html
+<button class="button button--primary is-active">送信</button>
+```
+
+## NG/OK の早見表
+- NG: `.left`, `.right`, `.red`, `.bigbox`, 難解語の使用、方式混在（`product_list` と `product-list` の混在）
+- OK: 役割・内容ベース（`.media__image`, `.primary`）、方式統一（いずれか 1 方式に固定）
+
+## 導入・レビュー用チェックリスト
+- [ ] 採用する命名方式（kebab / snake / BEM）を合意し、ドキュメント化した
+- [ ] クラス名に位置・色など見た目依存の語を使っていない
+- [ ] 色は `.primary` など抽象名 + トークンで管理している
+- [ ] 難しい単語を避け、直感的な語を選んでいる
+- [ ] 例外（`a/img/span` 終端）は条件を満たすときのみクラス無しにしている
+

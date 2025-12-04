@@ -1,0 +1,145 @@
+---
+alwaysApply: false
+description: details/summary を用いたアクセシブルなアコーディオン実装ガイド
+globs: *.html,*.css,*.js,*.ts,*.jsx,*.tsx
+---
+
+# アクセシブルなアコーディオン実装ガイド（`<details>` と `<summary>`）
+
+このルールは、初心者でも安全に「アクセシブルなアコーディオンUI」を実装できるようにするための実践ガイドです。`<details>` と `<summary>` は、開閉機能・キーボード操作・読み上げ対応などがブラウザ実装に含まれており、追加のARIAや複雑なJavaScriptが最小で済みます。
+
+## 目的（なぜ使うのか）
+- ブラウザ標準で「意味（セマンティクス）」と「操作（キーボード/スクリーンリーダー）」が担保される
+- `Enter`/`Space` で開閉、`Tab` でのフォーカス移動がそのまま使える
+- 開閉状態は `open` 属性でDOMに反映され、支援技術にも届きやすい
+
+## TL;DR（最小構成）
+```html
+<details>
+  <summary>概要タイトル</summary>
+  <div class="accordion-content">
+    ここに詳細コンテンツ。
+  </div>
+  <!-- コンテンツは block-level でOK。画像やリスト、フォームも可。 -->
+  <!-- 注意: summary は details の最初の子要素に配置すること -->
+  <!-- 注意: summary 内にインタラクティブ要素(button等)を入れないこと -->
+</details>
+```
+
+## 推奨CSS（見た目 + フォーカス可視 + 簡易アイコン）
+```css
+/* summary はクリック可能。フォーカスリングは必ず残す */
+summary {
+  cursor: pointer;
+  outline-offset: 2px;
+}
+
+/* 既定のマーカーを非表示にしてカスタムアイコンを付ける */
+summary::marker { content: ""; }
+summary::-webkit-details-marker { display: none; }
+
+summary::after {
+  content: "▸";
+  margin-inline-start: .5rem;
+  transition: transform 150ms ease;
+}
+
+details[open] summary::after {
+  transform: rotate(90deg);
+}
+
+.accordion-content {
+  overflow: clip; /* 高さアニメ時のはみ出し対策 */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  summary::after { transition: none; }
+}
+```
+
+## 開閉アニメーション（任意・視覚のみ上書き）
+アニメーションは必須ではありません。付ける場合も「キーボード操作」「読み上げ」「状態の正しさ」を壊さないよう最小限に留めます。
+
+```html
+<script>
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('details').forEach((details) => {
+    const content = details.querySelector('.accordion-content');
+    if (!content) return;
+
+    details.addEventListener('toggle', () => {
+      if (reduce) return;
+
+      const opening = details.open;
+      if (opening) {
+        // 開く: 高さを自動採寸 → 0→end にアニメーション
+        content.style.height = 'auto';
+        const end = content.offsetHeight;
+        content.style.height = '0px';
+        content.animate([
+          { height: '0px' },
+          { height: `${end}px` }
+        ], { duration: 200, easing: 'ease' }).onfinish = () => {
+          content.style.height = 'auto';
+        };
+      } else {
+        // 閉じる: 現在高さいっぱい → 0 にアニメーション
+        const start = content.offsetHeight;
+        content.style.height = `${start}px`;
+        content.animate([
+          { height: `${start}px` },
+          { height: '0px' }
+        ], { duration: 200, easing: 'ease' }).onfinish = () => {
+          content.style.height = '';
+        };
+      }
+    });
+  });
+}</script>
+```
+
+## “1つだけ開く”グループ化（任意）
+`<details>` の `name` 属性に頼らず、シンプルなJSで排他制御を行うと挙動が安定します。
+
+```html
+<section data-accordion-group>
+  <details>
+    <summary>質問1</summary>
+    <div class="accordion-content">回答1</div>
+  </details>
+  <details>
+    <summary>質問2</summary>
+    <div class="accordion-content">回答2</div>
+  </details>
+</section>
+
+<script>
+  document.querySelectorAll('[data-accordion-group]').forEach(group => {
+    const items = group.querySelectorAll('details');
+    items.forEach(d => d.addEventListener('toggle', () => {
+      if (!d.open) return;
+      items.forEach(o => { if (o !== d) o.open = false; });
+    }));
+  });
+}</script>
+```
+
+## よくあるNG
+- `summary` 内に `button` や別のフォーカス可能要素を入れる（フォーカス順序が崩れる）
+- フォーカスリングを視覚的に消す（可視フォーカス要件に抵触）
+- 既に状態が伝わるのに `aria-expanded` を上書きする（状態の二重管理）
+- `summary` を最初の子要素に置かない（期待通りに動かないことがある）
+
+## 納品前チェックリスト
+- [ ] `details > summary + .accordion-content` の構造になっている
+- [ ] キーボード（Tab/Enter/Space）で開閉できる
+- [ ] フォーカスリングが見える
+- [ ] `prefers-reduced-motion` に配慮している（必要ならアニメ無効）
+- [ ] 1つだけ開く要件がある場合は排他制御を実装
+- [ ] アコーディオン内のリンクやフォームが正しく操作できる
+
+## 補足（UXメモ）
+- アコーディオン見出しは内容を要約し、開閉状態が視覚的にも分かるようにする（アイコン回転など）
+- 検索ヒット時に自動展開される環境もあるため、内容の先頭は要点から書く
+

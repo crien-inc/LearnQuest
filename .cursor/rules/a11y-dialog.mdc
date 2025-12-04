@@ -1,0 +1,96 @@
+---
+alwaysApply: false
+description: dialog を用いたアクセシブルなモーダル実装ガイド
+globs: *.html,*.css,*.js,*.ts,*.jsx,*.tsx
+---
+
+# アクセシブルなモーダル実装ガイド（`<dialog>`）
+
+`<dialog>` はモーダルを「ネイティブ」に提供します。フォーカストラップ、Escでの閉鎖、背景無効化、`::backdrop` などをブラウザが処理するため、自作より安全でバグが少なく、WCAG要件を満たしやすくなります。
+
+## 目的（なぜ使うのか）
+- `showModal()` でトップレイヤーに表示し、背景操作を無効化
+- 初期フォーカス・Esc閉じ・`close`/`cancel` イベントが標準対応
+- `method="dialog"` でフォームの戻り値（`returnValue`）が簡単に扱える
+
+## TL;DR（最小構成）
+```html
+<button id="openModal">購入手続き</button>
+
+<dialog id="purchaseDialog" aria-labelledby="dialog-title" aria-describedby="dialog-desc">
+  <h2 id="dialog-title">購入の確認</h2>
+  <p id="dialog-desc">注文内容をご確認ください。よろしければ「注文する」を押してください。</p>
+
+  <form method="dialog">
+    <button value="cancel">キャンセル</button>
+    <button value="confirm" autofocus>注文する</button>
+  </form>
+</dialog>
+
+<script>
+  const dialog = document.getElementById('purchaseDialog');
+  const openBtn = document.getElementById('openModal');
+  let opener = null;
+
+  openBtn.addEventListener('click', () => {
+    opener = document.activeElement;
+    dialog.showModal();
+  });
+
+  dialog.addEventListener('close', () => {
+    if (opener) opener.focus(); // フォーカスを戻す
+    if (dialog.returnValue === 'confirm') {
+      // 送信処理など
+    }
+  });
+
+  // 背景クリックで閉じたい場合（仕様上デフォルトでは閉じない）
+  dialog.addEventListener('click', (e) => {
+    const rect = dialog.getBoundingClientRect();
+    const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top  && e.clientY <= rect.bottom;
+    if (!inside) dialog.close('cancel');
+  });
+}</script>
+```
+
+## 推奨CSS（見た目 + バックドロップ）
+```css
+dialog {
+  border: none;
+  border-radius: 8px;
+  padding: 1.25rem;
+  max-inline-size: 560px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.2);
+}
+
+dialog::backdrop {
+  background: rgba(0,0,0,.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog { transition: none; }
+}
+```
+
+## 実装のコツ
+- **ラベル付け**: 見出しを `aria-labelledby`、説明を `aria-describedby` に関連付ける
+- **初期フォーカス**: `autofocus` またはJSで最初に操作すべき要素にフォーカス
+- **閉じ方の提供**: 右上の「×」や「キャンセル」ボタン等、明確な終了手段を用意
+- **戻り先フォーカス**: `close` イベントでオープナーにフォーカスを戻す
+- **背景スクロール**: UAにより差があるため、必要に応じて開閉時に `html, body { overflow: hidden; }` を切替
+- **複数モーダル**: ネストや多重表示は避け、同時に1つだけ表示
+
+## よくあるNG
+- `div role="dialog"` を自作してフォーカストラップや背景無効化を手作り（不具合を招きやすい）
+- 閉じる手段が無い、ラベルが曖昧（利用者が閉じられない）
+- フォーカスリングを視覚的に消す（可視フォーカス要件に抵触）
+
+## 納品前チェックリスト
+- [ ] `dialog.showModal()` で表示、`dialog.close()` で閉じる
+- [ ] `aria-labelledby` と `aria-describedby` が適切
+- [ ] 初期フォーカス/フォーカス戻しができている
+- [ ] Esc で閉じられる（必要に応じて `cancel` イベントをハンドル）
+- [ ] バックドロップを適切にスタイル
+- [ ] 1つの画面で同時に複数モーダルを開かない
+
