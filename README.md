@@ -1,59 +1,127 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎓 LearnQuest
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+ゲーミフィケーションを取り入れた学習プラットフォームです。
 
-## About Laravel
+## 📚 機能
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **コース管理**: 動画・テキスト・クイズ・課題など多様なレッスンタイプ
+- **ゲーミフィケーション**: ポイント・レベル・バッジシステム
+- **学習進捗管理**: 連続学習日数、完了率などの追跡
+- **管理画面**: コース・レッスン・バッジ・ユーザーの管理
+- **動画埋め込み**: YouTube / Google Drive対応
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠 技術スタック
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend**: Laravel 12
+- **Frontend**: Vue.js 3 + Inertia.js
+- **CSS**: Tailwind CSS
+- **Database**: MySQL (Sail) / SQLite (ローカル)
+- **Development**: Laravel Sail (Docker)
 
-## Learning Laravel
+## 🚀 セットアップ
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 前提条件
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Docker Desktop がインストールされていること
 
-## Laravel Sponsors
+### Laravel Sail を使用したセットアップ
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+# リポジトリをクローン
+git clone https://github.com/YOUR_USERNAME/LearnQuest.git
+cd LearnQuest
 
-### Premium Partners
+# .env ファイルを作成
+cp .env.example .env
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Composer依存関係をインストール（Sailなしで初回のみ）
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
+    laravelsail/php84-composer:latest \
+    composer install --ignore-platform-reqs
 
-## Contributing
+# Sailでコンテナを起動
+./vendor/bin/sail up -d
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# アプリケーションキーを生成
+./vendor/bin/sail artisan key:generate
 
-## Code of Conduct
+# データベースマイグレーション
+./vendor/bin/sail artisan migrate
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# シーダーを実行（初期データ）
+./vendor/bin/sail artisan db:seed
 
-## Security Vulnerabilities
+# NPM依存関係をインストールしてビルド
+./vendor/bin/sail npm install
+./vendor/bin/sail npm run build
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### アクセス
 
-## License
+- **アプリケーション**: http://localhost
+- **Vite（開発時）**: http://localhost:5173
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 📖 Sailコマンド
+
+```bash
+# コンテナを起動
+./vendor/bin/sail up -d
+
+# コンテナを停止
+./vendor/bin/sail down
+
+# Artisanコマンド
+./vendor/bin/sail artisan [command]
+
+# NPMコマンド
+./vendor/bin/sail npm [command]
+
+# Composerコマンド
+./vendor/bin/sail composer [command]
+
+# MySQLに接続
+./vendor/bin/sail mysql
+
+# 開発サーバー（Vite）
+./vendor/bin/sail npm run dev
+```
+
+## 👤 初期アカウント
+
+シーダー実行後、以下のアカウントが作成されます：
+
+| 役割 | メールアドレス | パスワード |
+|------|---------------|-----------|
+| 管理者 | admin@example.com | password |
+| ユーザー | user@example.com | password |
+
+## 📂 プロジェクト構成
+
+```
+LearnQuest/
+├── app/
+│   ├── Http/Controllers/     # コントローラー
+│   │   └── Admin/            # 管理画面用
+│   └── Models/               # Eloquentモデル
+├── database/
+│   ├── migrations/           # マイグレーション
+│   └── seeders/              # シーダー
+├── docker/                   # Docker設定
+├── resources/
+│   └── js/
+│       ├── Components/       # Vueコンポーネント
+│       ├── Layouts/          # レイアウト
+│       └── Pages/            # ページコンポーネント
+│           └── Admin/        # 管理画面
+├── routes/
+│   ├── web.php               # Webルート
+│   └── auth.php              # 認証ルート
+└── docker-compose.yml        # Docker Compose設定
+```
+
+## 📝 ライセンス
+
+MIT License
